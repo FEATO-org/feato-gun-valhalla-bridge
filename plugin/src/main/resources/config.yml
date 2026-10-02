@@ -1,0 +1,19 @@
+# Effect settings are reserved and inactive in Phase 1.
+tactical-reload:
+  enabled: true
+  magazine-multiplier: 0.85
+weapon-bash:
+  enabled: true
+  base-damage: 3.0
+deadeye:
+  night-vision:
+    enabled: true
+demolitionist:
+  explosion-radius-multiplier: 1.10
+bulwark:
+  active-ticks: 40
+  knockback-resistance-add: 0.40
+debug:
+  enabled: false
+  shot-context: false
+  damage-integration: false

@@ -1,0 +1,49 @@
+# Verification-only curve. No automatic shot XP or production rewards.
+experience:
+  max_level: 100
+  exp_level_curve: '100 * %level%'
+  daily_limit: -1
+starting_coordinates: '0,4'
+navigable: true
+starting_perks: {}
+leveling_perks: {}
+special_perks: {}
+perks:
+  firearms_poc_recruit:
+    name: Recruit (PoC)
+    description: '登録・取得・respec確認用。ゲーム効果なし。'
+    icon: CROSSBOW
+    coords: '0,4'
+    required_lv: 0
+    cost: 1
+    perk_rewards: {}
+  firearms_poc_quick_draw:
+    name: Quick Draw (PoC)
+    description: '三択排他の確認用。効果は未実装。'
+    icon: FEATHER
+    coords: '2,2'
+    required_lv: 20
+    cost: 1
+    requireperk_all: [firearms_poc_recruit]
+    perk_rewards:
+      perks_locked_add: [firearms_poc_suppressive_fire, firearms_poc_deadeye_focus]
+  firearms_poc_suppressive_fire:
+    name: Suppressive Fire (PoC)
+    description: '三択排他の確認用。効果は未実装。'
+    icon: CROSSBOW
+    coords: '2,4'
+    required_lv: 20
+    cost: 1
+    requireperk_all: [firearms_poc_recruit]
+    perk_rewards:
+      perks_locked_add: [firearms_poc_quick_draw, firearms_poc_deadeye_focus]
+  firearms_poc_deadeye_focus:
+    name: Deadeye Focus (PoC)
+    description: '三択排他の確認用。効果は未実装。'
+    icon: SPYGLASS
+    coords: '2,6'
+    required_lv: 20
+    cost: 1
+    requireperk_all: [firearms_poc_recruit]
+    perk_rewards:
+      perks_locked_add: [firearms_poc_quick_draw, firearms_poc_suppressive_fire]

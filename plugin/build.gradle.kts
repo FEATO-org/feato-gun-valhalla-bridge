@@ -1,6 +1,7 @@
 import groovy.json.JsonSlurper
 import java.security.MessageDigest
 import java.util.Properties
+import java.net.URI
 
 plugins { java }
 group = "jp.feato"
@@ -23,7 +24,7 @@ val fetchValhalla by tasks.registering {
             destination.parentFile.mkdirs()
             val temporary = destination.resolveSibling(destination.name + ".part")
             try {
-                java.net.URI("https://cdn.modrinth.com/data/rxrgsoud/versions/GkeSDJSq/ValhallaMMO_1.10.3.jar")
+                URI("https://cdn.modrinth.com/data/rxrgsoud/versions/GkeSDJSq/ValhallaMMO_1.10.3.jar")
                     .toURL().openConnection().apply { connectTimeout = 15000; readTimeout = 60000 }
                     .getInputStream().use { input -> temporary.outputStream().use { input.copyTo(it) } }
                 temporary.copyTo(destination, overwrite = true)

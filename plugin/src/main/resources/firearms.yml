@@ -1,0 +1,6 @@
+display_name: 銃器
+description: 'FIREARMS登録PoC。銃器のゲーム効果は未実装。'
+icon: CROSSBOW
+levelbar_title: '銃器 Lv%level%'
+levelbar_color: YELLOW
+levelbar_style: SEGMENTED_10

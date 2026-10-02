@@ -1,0 +1,16 @@
+name: FEATOGunValhallaBridge
+version: '${version}'
+main: jp.feato.gunvalhalla.FEATOGunValhallaBridge
+description: FEATO Gun-Valhalla Bridge Phase 1 PoC
+api-version: '26.2'
+depend: [ValhallaMMO]
+authors: [FEATO]
+commands:
+  firearms:
+    description: Administrator-only FIREARMS PoC diagnostics
+    usage: /firearms debug <profile|exp> <player> [amount]
+    permission: feato.gunvalhalla.debug
+permissions:
+  feato.gunvalhalla.debug:
+    description: Inspect FIREARMS profiles and grant test XP
+    default: op
