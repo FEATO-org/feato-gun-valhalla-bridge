@@ -4,4 +4,5 @@ plugin/libs/
 .idea/
 *.iml
 .DS_Store
+__pycache__/
 run/

@@ -168,4 +168,20 @@ Gradle 9.2.1にもdeprecation警告があり、Gradle 10への更新は対象外
 - SQLite/MySQL/Redis保存方式の実機試験は未実施。MySQLの場合はcolumn metadataも確認する。
 - `/reload`、PlugMan、オンライン途中の追加はサポート対象外。公開Registry変更を検知したら停止。
 - Gun Core/Modern Gunsの対象Datapack本体と実行経路の確認はPhase 2へ保留。
-- LICENSEは方針確定待ち。release workflow・本番導入・インフラ変更は未実施。
+- LICENSEは方針確定待ち。本番導入・インフラ変更は未実施。
+
+## Manual release workflow (2026-10-03)
+
+ユーザーの追加指示により`workflow_dispatch`のRelease workflowを追加。
+`version`だけを指定し、専用metadata commit・annotated tag・両成果物のbuildと公開を行う。
+release IDは全既存SemVer tagのmetadataとsourceから一意な連番を採番し、
+PluginとDatapackの互換性markerを同期。対象依存versionとprotocolは変更しない。
+11件のrelease toolingテストで入力・重複・採番・タグ再現性・成果物不一致を検証。
+配布の自動化をPhase 1実機検証の成功とは扱わない。操作はREADMEのManual release参照。
+
+release経路の検証: 一時コピーで`0.2.0-poc.99`をprepareし、
+`./gradlew clean build --no-daemon`成功（Javaテスト27件）。
+`release.py verify`でJAR内plugin.yml/bridge.propertiesとZIP内marker/pack.mcmetaの一致、
+SHA256SUMS生成を確認。専用metadata commitへのannotated tag作成とtagged sourceを確認。
+GitHub Actionsの式・workflow構文はactionlint 1.7.12で検査成功。
+この試験versionはローカル検証のみで、GitHubにtag/Releaseを作成していない。
