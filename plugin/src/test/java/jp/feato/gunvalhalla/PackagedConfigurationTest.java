@@ -26,6 +26,13 @@ class PackagedConfigurationTest {
         assertEquals(40, config.getInt("bulwark.active-ticks"));
         assertEquals(0.40, config.getDouble("bulwark.knockback-resistance-add"));
     }
+    @Test void commandPermissionsAreSeparatedAndRootCommandDoesNotRequireDebug() throws Exception {
+        var config = load("/plugin.yml");
+        assertEquals("/firearms <reload|debug>", config.getString("commands.firearms.usage"));
+        assertFalse(config.contains("commands.firearms.permission"));
+        assertEquals("op", config.getString("permissions.feato.gunvalhalla.debug.default"));
+        assertEquals("op", config.getString("permissions.feato.gunvalhalla.reload.default"));
+    }
     @Test void packagedSkillHasNoCommandsAndAbilityLocksCoverBothOtherChoices() throws Exception {
         var skill = load("/firearms.yml"); assertEquals("銃器", skill.getString("display_name"));
         var config = load("/firearms_progression.yml"); assertEquals(100, config.getInt("experience.max_level"));

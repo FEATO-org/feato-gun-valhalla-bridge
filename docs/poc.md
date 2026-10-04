@@ -1,17 +1,19 @@
 # FIREARMS Bridge PoC
 
-検証日: 2026-10-03 (Asia/Tokyo)。実装対象は固定版のみ。
+初期検証日: 2026-10-03、進捗更新: 2026-10-04 (Asia/Tokyo)。実装対象は固定版のみ。
 
 ## Gate / status
 
-- Phase 1: 部分成功。専用Java実装、固定配布JARに対するコンパイル、純粋ロジック・設定のテストまで。
-- Phase 2: 未実施。Phase 1の実機合格待ち。
+- Phase 1: 部分成功。専用Java実装と静的テストに加え、ユーザー実機確認でhandshake・FIREARMS登録・銃器表示・Lv0 Profileの再ログイン維持を確認済み。
+- Phase 2: 未実施。respec/recalculationは後回しとし、その検証待ちで後続開発を止めない。
 - Phase 3: 未実施。Phase 2の実機合格待ち。
 - Tactical Reload / Weapon Bash / Deadeye Night Vision / Demolitionist / Bulwark: 未実装。設定キーのみ予約。
 
-ユーザー確認で利用可能なのは本番環境のみ。検証用サーバー・実プレイヤーセッションがなく、
-本番への配置・再起動・設定変更を行っていない。Paperサーバーは今回起動していない。
-実機成功を推測で補わず、この地点で後続Phaseを停止する。
+2026-10-04、ユーザーから起動失敗を修正し正常動作したとの報告を受けた。
+以下の「ユーザー実機確認済み」はユーザー報告の範囲であり、今回Codexが本番を操作した結果ではない。
+Lv0時の特定XP値の保存一致、Level Up、完全再起動後の永続化、DB上の値、Perk三択排他、
+respec/recalculationは未確認。respecは実装進行を優先して後回しとし、専用の回避処理は追加しない。
+この変更ではPhase 2/3や効果本体を実装せず、成功範囲を推測で広げない。
 
 ## Repository decisions
 
@@ -20,13 +22,15 @@ Minecraft関連のit-infrastructure-server、feato_horsemanship、feato-coin-exc
 feato_ancient_coinはいずれもPUBLIC / mainであったため、それに合わせる。
 Minecraft関連リポジトリのlicenseInfoはすべてnull。LICENSEを保留。
 他用途のsupport-feato-systemのMIT / developをMinecraft運用へ推測適用しない。
-PluginとDatapackは本リポジトリで管理。インフラリポジトリは読み取りのみ。
+PluginとDatapackは本リポジトリで管理。初期PoC時のインフラ参照は読み取りのみだったが、
+その後の依頼で[インフラPR #24](https://github.com/FEATO-org/it-infrastructure-server/pull/24)へ0.1.0の導入設定を追加した。
+今回のconfig reload変更はBridgeリポジトリだけを対象とする。
 
 ## Target evidence
 
 | 対象 | 証拠 | 範囲 |
 |---|---|---|
-| Paper 26.2 build 126 | 固定API `io.papermc.paper:paper-api:26.2.build.126-stable`、[build API](https://fill.papermc.io/v3/projects/paper/versions/26.2/builds/126) | コンパイル、配布metadata・JARハッシュ確認。起動未実施 |
+| Paper 26.2 build 126 | 固定API `io.papermc.paper:paper-api:26.2.build.126-stable`、[build API](https://fill.papermc.io/v3/projects/paper/versions/26.2/builds/126) | コンパイル、配布metadata・JARハッシュ確認。ユーザーによるBridge完全起動確認を追加 |
 | Minecraft 26.2 | Paper JAR内`version.json` | Java 25、data pack 107.1、protocol 776。最新への読み替えなし |
 | ValhallaMMO 1.10.3 | [固定配布JAR](https://cdn.modrinth.com/data/rxrgsoud/versions/GkeSDJSq/ValhallaMMO_1.10.3.jar)、plugin.yml、javap | 公開APIと`shouldPersist(Profile)`のbytecode確認 |
 | ValhallaMMOソース | [既存checkoutと同じcommit](https://github.com/Athlaeos/ValhallaMMO/tree/231f9758d51a14bff2214d7c67428960b15648d4)、pom revision 1.10.3 | Registry、保存、Perk、respec経路の根拠。Bridgeへコピーしない |
@@ -85,14 +89,34 @@ Phase 2で同期通知または順序・一意性を保証したqueue等を実�
 
 | 確認項目 | 今回 | 合格に必要な実機証拠 |
 |---|---|---|
-| Skill / Profile登録 | 固定JARへのコンパイル、登録前提guardの単体テストのみ | 起動ログ、銃器メニュー、SQL schema |
+| 完全起動 / Datapack handshake | ユーザー実機確認済み。handshake通過・FIREARMS登録まで到達 | ユーザー報告。marker不一致・停止など異常系の実機試験は未確認 |
+| Skill / Profile登録 | ユーザー実機確認済み。FIREARMS登録成功 | DBの必要カラム・値の直接確認は未確認 |
+| FIREARMS表示 | ユーザー実機確認済み。ValhallaMMOでFIREARMS / 銃器が認識・表示 | Perk取得・排他動作の確認とは別 |
 | XP / Level Up | 入力制約、公開addEXP signature確認のみ | Lv0少量XPとLv1以上、実event・level値 |
-| Profile save/load | 保存条件bytecode確認のみ | Valhalla DBのFIREARMS行と読み戻し一致 |
-| Logout/Login | 未確認 | 同一UUIDでXP/level/Perk維持 |
+| Profile save/load | 保存条件bytecode確認、Lv0 Profileの再ログイン維持をユーザー確認 | 特定XP値の保存一致とDB上の値は未確認 |
+| Logout/Login | ユーザー実機確認済み。Lv0 FIREARMS Skill/Profileの維持 | 特定XP値・Perkの完全一致までは確認されていない |
 | Server restart | 未確認 | 正常停止・完全再起動後の値とDB整合 |
 | Perk取得 / 三択 | 設定構造・相互lockの静的テストのみ | 各選択の他2つ拒否、再接続後も排他 |
-| respec / recalculation | 公開経路とソース確認のみ | Valhalla標準respecで再選択・XP/level期待値 |
+| respec / recalculation | 実機未確認。実装進行を優先して後回し（開発の停止条件にしない） | Valhalla標準respecで再選択・XP/level期待値 |
 | 既存Skillへの副作用 | 必須Skill guardテストのみ | 他SkillのXP/level/Perkを前後比較 |
+| Bridge config reload | ローカルのvalidation・権限・commandテスト成功。実機未確認 | console/管理者からのreload、旧設定保持、既存Profileとhandshakeの継続 |
+
+### Bridge runtime config reload（2026-10-04）
+
+`/firearms reload`を追加。`feato.gunvalhalla.reload`（既定OP）でconsoleからも実行でき、
+`debug.enabled=false`やBridgeの非ready状態でもconfigの再読み込み自体は可能。
+既存debugコマンドは別の`feato.gunvalhalla.debug`と有効なdebug設定を要求し、
+互換性・ready検査とEXP入力制限を維持する。
+
+対象はBridgeの`config.yml`にある全runtime設定。YAMLのparse・必須キー・boolean/numeric型・
+有限値・範囲を検証してから不変の設定snapshotを一括差し替える。失敗時は旧設定とファイルを
+維持し、送信者へ理由とWARNログを返す。成功時はdebug状態を表示し実行者名をログへ記録する。
+YAMLエラーに含まれる設定内容は送信者やWARNへ出さない。
+
+Skill/Profile/Registry、Perk tree、`firearms.yml`/`firearms_progression.yml`、
+Datapack handshake・markerには触れない。MinecraftやValhallaMMOのreload、Pluginの
+再有効化・自動再登録は行わない。停止済みPoCの復旧は完全再起動が必要。
+reload経路のローカルテストは実機のPlayer/Valhalla動作を証明しない。
 
 ### Reproducible live test procedure (dedicated test server)
 
@@ -110,7 +134,7 @@ Phase 2で同期通知または順序・一意性を保証したqueue等を実�
 7. `/skills`で銃器のRecruitとAbilityを取得。Valhalla側pointが必要。
    各三択を個別に試し、残り2つは取得できないことをGUIとeffective lockで確認。
    非同期再計算後に再度profileを確認し、再接続・再起動後も選択維持を確認。
-8. テスト用プレイヤーのみ、Valhalla標準`/valhalla reset SKILLS_REFUND_EXP <player>`でrespec。
+8. **後回し（未確認のまま開発継続）**。検証する際はテスト用プレイヤーのみ、Valhalla標準`/valhalla reset SKILLS_REFUND_EXP <player>`でrespec。
    標準仕様で他SkillのPerkもresetされるため、これは専用試験環境のみで実施。
    FIREARMS XP/level保持、三択lock解除、別Ability再取得と再計算を確認。
    単一skill resetも必要なら`/valhalla reset skill FIREARMS <player>`を使い別途結果を記録。
@@ -119,8 +143,9 @@ Phase 2で同期通知または順序・一意性を保証したqueue等を実�
 10. 新規検証ワールドでDatapack不在・marker不一致・必須Skillを1つずつ無効化し、
     FIREARMS登録停止のログを確認。既存データのある本番で異常系を実行しない。
 
-いずれかで永続化不能、登録不安定、データ破損、respec/再計算不能、公開API経路不成立が
-判明したらPhase 1で停止し、再現条件・ログ・DB状態を残す。回避実装を推測で追加しない。
+永続化不能、登録不安定、データ破損、公開API経路不成立などの具体的な問題が
+判明したら再現条件・ログ・DB状態を残す。respec/recalculationが未確認であることだけを
+後続開発の停止理由にしない。respec専用処理や回避実装を推測で追加しない。
 
 ## Phase 2 (not implemented)
 
@@ -145,10 +170,15 @@ Java 25 / Gradle 9.2.1でリポジトリ直下から実行:
 ./gradlew clean build --no-daemon
 ```
 
-両方BUILD SUCCESSFUL。最終clean buildで固定Valhalla JAR取得・SHA-512検証から実行。
-JUnit: 27件、failures=0、errors=0、skipped=0。
-対象は設定parse、登録前提（5必須Skill・重複・late registration）、heartbeat状態遷移、
-互換性metadata、XP入力の異常系。Valhalla runtimeやプレイヤーをmockして成功判定していない。
+初期実装の両buildはBUILD SUCCESSFUL（JUnit 27件）。2026-10-04のconfig reload追加後も
+`./gradlew clean build --no-daemon`はBUILD SUCCESSFUL。固定Valhalla JARの取得・SHA-512検証を含む。
+JUnit: **66件、failures=0、errors=0、skipped=0**（既存27件と追加39件）。
+既存の設定parse、登録前提（5必須Skill・重複・late registration）、heartbeat状態遷移、
+互換性metadata、XP入力の異常系を維持。追加テストでは正常値・境界値、型/範囲/非有限値・
+必須キー欠落、不正YAML/読込失敗での旧snapshot・ファイル保持、reload/debug権限分離、
+debug無効時のreloadと各debug操作の拒否、状態切替、候補表示、WARN、秘密値非出力、plugin.ymlを検証。
+実際のrouterとファイルloaderをテストし、CommandSenderはテスト用proxy、debug操作は境界spyを使用。
+これをValhalla runtimeや実プレイヤーの実機成功とは扱わない。
 Datapack JSON/必須function/tag/marker一致の検査成功。
 JARにValhallaクラスを同梱しないこと、ZIP直下のpack.mcmetaを確認。
 
@@ -164,11 +194,12 @@ Gradle 9.2.1にもdeprecation警告があり、Gradle 10への更新は対象外
 ## Known limitations / next gate
 
 - 検証用サーバー・実クライアントが必要。現時点で全Phaseの成立証明は完了していない。
-- SQL schema検査・初期化順序・Datapack heartbeatの実機動作は未確認。
-- SQLite/MySQL/Redis保存方式の実機試験は未実施。MySQLの場合はcolumn metadataも確認する。
-- `/reload`、PlugMan、オンライン途中の追加はサポート対象外。公開Registry変更を検知したら停止。
+- ユーザー実機確認でhandshake・FIREARMS登録まで到達済み。SQL schemaの直接検査、異常系と保存値の整合は未確認。
+- SQLite/MySQL/Redis各保存方式のDB値照合を伴う実機試験は未実施。MySQLの場合はcolumn metadataも確認する。
+- Minecraft `/reload`、PlugMan、オンライン途中の追加はサポート対象外。Bridgeのconfigだけを読む`/firearms reload`は対応。公開Registry変更を検知したら停止。
 - Gun Core/Modern Gunsの対象Datapack本体と実行経路の確認はPhase 2へ保留。
-- LICENSEは方針確定待ち。本番導入・インフラ変更は未実施。
+- respec/recalculationは未確認のまま後回し。後続開発を止める条件にはせず、専用処理は追加しない。
+- LICENSEは方針確定待ち。インフラ設定追加とユーザーの実機確認は上記参照。今回Codexによる本番適用は行わない。
 
 ## Manual release workflow (2026-10-03)
 

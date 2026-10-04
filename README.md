@@ -20,7 +20,9 @@ FEATO Minecraft Server向けBridge。
 ## Status
 
 Proof of Concept。Phase 1の検証用。Phase 2/3、銃器効果、本番XPは未実装。
-Phase 1の実機検証に合格するまで後続Phaseへ進まない。
+ユーザー実機確認でhandshake・FIREARMS登録・銃器表示・Lv0 Profileの再ログイン維持まで確認済み。
+respec/recalculationは未確認のまま後回しとし、その検証待ちで後続開発を止めない。
+確認範囲と残りの検証項目は[PoC記録](docs/poc.md)を参照。
 
 ## Build
 
@@ -93,6 +95,28 @@ markerの一致は実際に導入されたGun Core/Modern Gunsのversion検査�
 管理者専用の`/firearms debug profile <player>`、`/firearms debug exp <player> <amount>`を
 使うには`debug.enabled: true`と`feato.gunvalhalla.debug`権限が必要。
 詳細な検証手順・進行条件は[PoC記録](docs/poc.md)を参照。
+
+## Administration commands
+
+| コマンド | 権限（既定OP） | 条件 |
+| --- | --- | --- |
+| `/firearms reload` | `feato.gunvalhalla.reload` | debug無効時も利用可能。consoleからも実行可能 |
+| `/firearms debug profile <player>` | `feato.gunvalhalla.debug` | `debug.enabled: true`、Bridgeの互換性確認・登録完了、対象がオンライン |
+| `/firearms debug exp <player> <amount>` | `feato.gunvalhalla.debug` | 上と同じ。有限・正数・100万以下の検証用EXP |
+
+`reload`は`plugins/FEATOGunValhallaBridge/config.yml`のBridge runtime設定だけを再読み込みします。FIREARMS Skill/Profile、ValhallaMMO Registry、Perk tree、Datapack handshake、protocol/version markerは変更しません。`firearms.yml`、`firearms_progression.yml`など構造の変更や、停止したPoCの復旧には引き続き完全再起動が必要です。
+
+debugを切り替える手順:
+
+1. Bridgeの`config.yml`の`debug.enabled`を`true`または`false`へ変更。
+2. 管理者またはconsoleから`/firearms reload`を実行。
+3. 成功メッセージの`debug.enabled=true/false`を確認。別権限なのでreload権限だけではEXPを付与できません。
+
+設定をUTF-8で一度だけ一時読み込みし、全既存キーの型と数値範囲を検証した後、Bridgeが参照する不変のruntime設定を一括差し替えます。必須キーの欠落、booleanの文字列化、非有限数、不正な範囲、壊れたYAML、読込失敗は拒否し、現在有効な設定とファイルを変更せず、管理者へ理由とWARNログを返します。成功時は実行者名をログへ記録します。
+
+`magazine-multiplier`は`0 < 値 <= 1`、`base-damage`と`knockback-resistance-add`は`>= 0`、`explosion-radius-multiplier`は`> 0`、`active-ticks`は`0..2147483647`の整数です。予約済みの効果設定も再読み込み・検証されますが、Phase 1では効果を発揮しません。Minecraft `/reload`やPlugin disable/enableは実行しません。
+
+インフラで設定を起動時同期する場合は、変更したconfigを管理元にも反映してください。次回起動時の同期でruntime側の編集が上書きされる場合があります。
 
 ## Ownership / license
 

@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import jp.feato.gunvalhalla.command.FirearmsDebugCommand;
+import jp.feato.gunvalhalla.command.FirearmsCommand;
+import jp.feato.gunvalhalla.config.RuntimeConfiguration;
 import jp.feato.gunvalhalla.compatibility.BridgeCompatibility;
 import jp.feato.gunvalhalla.compatibility.DatapackHandshake;
 import jp.feato.gunvalhalla.integration.valhalla.ValhallaIntegration;
@@ -17,6 +19,7 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 
 public final class FEATOGunValhallaBridge extends JavaPlugin implements Listener {
+    private RuntimeConfiguration runtimeConfiguration;
     private BridgeCompatibility compatibility;
     private DatapackHandshake handshake;
     private ValhallaIntegration valhalla;
@@ -27,6 +30,13 @@ public final class FEATOGunValhallaBridge extends JavaPlugin implements Listener
     @Override public void onEnable() {
         saveDefaultConfig();
         try (var input = getResource("bridge.properties")) {
+            runtimeConfiguration = new RuntimeConfiguration(getDataFolder().toPath().resolve("config.yml"));
+            valhalla = new ValhallaIntegration();
+            var commands = new FirearmsCommand(runtimeConfiguration, new FirearmsDebugCommand(this, valhalla), getLogger());
+            var command = Objects.requireNonNull(getCommand("firearms"));
+            command.setExecutor(commands);
+            command.setTabCompleter(commands);
+            runtimeConfiguration.reload();
             compatibility = BridgeCompatibility.load(input);
             if (!getPluginMeta().getVersion().equals(compatibility.version())) throw new IllegalStateException("Plugin metadata version mismatch");
             ServerBuildInfo info = ServerBuildInfo.buildInfo();
@@ -37,8 +47,6 @@ public final class FEATOGunValhallaBridge extends JavaPlugin implements Listener
             if (dependency == null || !dependency.isEnabled() || !dependency.getPluginMeta().getVersion().equals(compatibility.valhallaVersion()))
                 throw new IllegalStateException("Requires enabled ValhallaMMO " + compatibility.valhallaVersion());
             handshake = new DatapackHandshake(compatibility.marker());
-            valhalla = new ValhallaIntegration();
-            Objects.requireNonNull(getCommand("firearms")).setExecutor(new FirearmsDebugCommand(this, valhalla));
             getServer().getPluginManager().registerEvents(this, this);
             getServer().getScheduler().runTaskTimer(this, this::checkCompatibility, 20, 20);
             getLogger().info("Bridge plugin=" + compatibility.version() + " protocol=" + compatibility.protocol() +
@@ -109,4 +117,5 @@ public final class FEATOGunValhallaBridge extends JavaPlugin implements Listener
     @Override public void onDisable() { failed = true; }
     public boolean isReady() { return isEnabled() && registered && !failed && handshake != null && handshake.state() == DatapackHandshake.State.VERIFIED; }
     public String status() { return status; }
+    public boolean debugEnabled() { return runtimeConfiguration != null && runtimeConfiguration.debugEnabled(); }
 }
