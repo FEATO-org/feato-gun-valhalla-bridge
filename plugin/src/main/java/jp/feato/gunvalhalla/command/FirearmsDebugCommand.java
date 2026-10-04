@@ -17,10 +17,10 @@ public final class FirearmsDebugCommand implements TabExecutor {
     }
     @Override public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!sender.hasPermission(PERMISSION)) { sender.sendMessage("Permission denied"); return true; }
-        if (!plugin.getConfig().getBoolean("debug.enabled", false)) { sender.sendMessage("PoC debug is disabled in config.yml"); return true; }
+        if (!plugin.debugEnabled()) { sender.sendMessage("PoC debug is disabled in config.yml"); return true; }
         if (!plugin.isReady()) { sender.sendMessage("FIREARMS is unavailable: " + plugin.status()); return true; }
-        boolean profile = args.length == 3 && args[0].equals("debug") && args[1].equals("profile");
-        boolean exp = args.length == 4 && args[0].equals("debug") && args[1].equals("exp");
+        boolean profile = args.length == 3 && args[0].equalsIgnoreCase("debug") && args[1].equalsIgnoreCase("profile");
+        boolean exp = args.length == 4 && args[0].equalsIgnoreCase("debug") && args[1].equalsIgnoreCase("exp");
         if (!profile && !exp) return false;
         Player player = plugin.getServer().getPlayerExact(args[2]);
         if (player == null) { sender.sendMessage("Target must be an online player with an exact name"); return true; }
@@ -43,9 +43,9 @@ public final class FirearmsDebugCommand implements TabExecutor {
         }
     }
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!sender.hasPermission(PERMISSION) || !plugin.getConfig().getBoolean("debug.enabled", false)) return List.of();
+        if (!sender.hasPermission(PERMISSION) || !plugin.debugEnabled()) return List.of();
         if (args.length == 1) return List.of("debug");
-        if (args.length == 2 && args[0].equals("debug")) return List.of("profile", "exp");
+        if (args.length == 2 && args[0].equalsIgnoreCase("debug")) return List.of("profile", "exp");
         return List.of();
     }
 }

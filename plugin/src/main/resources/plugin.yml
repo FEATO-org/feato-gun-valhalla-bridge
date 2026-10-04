@@ -7,10 +7,12 @@ depend: [ValhallaMMO]
 authors: [FEATO]
 commands:
   firearms:
-    description: Administrator-only FIREARMS PoC diagnostics
-    usage: /firearms debug <profile|exp> <player> [amount]
-    permission: feato.gunvalhalla.debug
+    description: FEATO Gun-Valhalla Bridge administration
+    usage: /firearms <reload|debug>
 permissions:
   feato.gunvalhalla.debug:
     description: Inspect FIREARMS profiles and grant test XP
+    default: op
+  feato.gunvalhalla.reload:
+    description: Reload FEATO Gun-Valhalla Bridge runtime configuration
     default: op
