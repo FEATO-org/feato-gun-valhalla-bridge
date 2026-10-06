@@ -19,10 +19,13 @@ FEATO Minecraft Server向けBridge。
 
 ## Status
 
-Proof of Concept。Phase 1の検証用。Phase 2/3、銃器効果、本番XPは未実装。
+Proof of Concept。Phase 1: Complete（ユーザー実機確認と指示による）。Phase 3: Not started。
+Phase 2は固定Datapack調査でslowcast帰属の停止条件に該当しBlocked。Shot Adapter、銃器効果、本番XPは未実装。
 ユーザー実機確認でhandshake・FIREARMS登録・銃器表示・Lv0 Profileの再ログイン維持まで確認済み。
 respec/recalculationは未確認のまま後回しとし、その検証待ちで後続開発を止めない。
-確認範囲と残りの検証項目は[PoC記録](docs/poc.md)を参照。
+確認範囲と残りの検証項目は[PoC記録](docs/poc.md)、停止根拠と再現候補は
+[Phase 2 contract audit](docs/phase2-contract-audit.md)を参照。
+`debug.shot-context`は予約設定であり、現時点ではshot log / `debug shots`を出力しない。
 
 ## Build
 
