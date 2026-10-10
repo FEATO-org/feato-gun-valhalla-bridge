@@ -1,7 +1,7 @@
 name: FEATOGunValhallaBridge
 version: '${version}'
 main: jp.feato.gunvalhalla.FEATOGunValhallaBridge
-description: FEATO Gun-Valhalla Bridge Phase 1 PoC
+description: FEATO Gun-Valhalla Bridge raycast Shot Context PoC
 api-version: '26.2'
 depend: [ValhallaMMO]
 authors: [FEATO]
@@ -11,7 +11,7 @@ commands:
     usage: /firearms <reload|debug>
 permissions:
   feato.gunvalhalla.debug:
-    description: Inspect FIREARMS profiles and grant test XP
+    description: Inspect FIREARMS profiles and shots, adapt test guns, and grant test XP
     default: op
   feato.gunvalhalla.reload:
     description: Reload FEATO Gun-Valhalla Bridge runtime configuration

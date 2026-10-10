@@ -2,6 +2,7 @@ import groovy.json.JsonSlurper
 import java.security.MessageDigest
 import java.util.Properties
 import java.net.URI
+import java.util.zip.ZipFile
 
 plugins { java }
 group = "jp.feato"
@@ -70,8 +71,53 @@ val verifyDatapack by tasks.registering {
         keys.forEach { (score, property) ->
             check(marker.lineSequence().count { it == "scoreboard players set #$score fgv_bridge ${compatibility.getProperty(property)}" } == 1) { "Datapack marker mismatch: $score" }
         }
+        for ((tagName, bridgeFunction) in mapOf("custom_raycast" to "shot/raycast", "damage_type_entity" to "shot/entity_hit", "damage_type_block" to "shot/block_hit")) {
+            val tag = JsonSlurper().parse(root.resolve("data/gbg/tags/function/$tagName.json")) as Map<*, *>
+            check(tag["replace"] == false && tag["values"] == listOf("feato_gun_valhalla:$bridgeFunction"))
+        }
+        root.resolve("data/feato_gun_valhalla/function").walkTopDown().filter { it.extension == "mcfunction" }.forEach { file ->
+            Regex("function (feato_gun_valhalla:[a-z0-9_/]+)").findAll(file.readText()).forEach { match ->
+                check(root.resolve("data/feato_gun_valhalla/function/${match.groupValues[1].substringAfter(':')}.mcfunction").isFile) { "Missing Bridge function: $match" }
+            }
+        }
+        check(!root.resolve("data/gbg/function").exists()) { "Gun Core function overrides are forbidden" }
     }
 }
+val verifyGunCoreContract by tasks.registering {
+    // Verify fixed upstream bytes and generated files on every build; do not infer installed version.
+    doLast {
+        val dependencies = layout.buildDirectory.dir("dependencies").get().asFile.apply { mkdirs() }
+        val artifacts = listOf(
+            Triple("gun-core.zip", "https://cdn.modrinth.com/data/Ti7LgRXJ/versions/X7knYm9t/Gun%20Core%20-%20Data%20V1.0.15.zip", "43b4241835b15fddf0f85fa333ecef1bcac5e5598aefabbf3bd32c1506b6196f6db4e751b96a0026e49fc79670afbc44ec626d7b77b6f5cb2e692db8ec7e434c"),
+            Triple("modern-guns.zip", "https://cdn.modrinth.com/data/ufgOyMFr/versions/bcKCNJp2/Modern%20Guns%20-%20Data%20V1.9.3.zip", "008e481cf01aea693e30a9458cde060cda76961f3766f90415bd2503025758d289a97fde2e5a411b4a238f3811ca79114a2a8c523893aea135c750f52dcb8155")
+        )
+        artifacts.forEach { (name, url, hash) ->
+            val destination = dependencies.resolve(name)
+            if (!destination.exists()) {
+                val temporary = dependencies.resolve("$name.part")
+                try {
+                    URI(url).toURL().openConnection().apply { connectTimeout = 15000; readTimeout = 60000 }
+                        .getInputStream().use { input -> temporary.outputStream().use { input.copyTo(it) } }
+                    temporary.copyTo(destination, overwrite = true)
+                } finally { temporary.delete() }
+            }
+            check(MessageDigest.getInstance("SHA-512").digest(destination.readBytes()).joinToString("") { "%02x".format(it) } == hash) { "Fixed upstream checksum mismatch: $name" }
+        }
+        val process = ProcessBuilder("python3", repositoryRoot.resolve("scripts/generate_shot_contract.py").absolutePath,
+            dependencies.resolve("gun-core.zip").absolutePath, dependencies.resolve("modern-guns.zip").absolutePath, "--check")
+            .directory(repositoryRoot).inheritIO().start()
+        check(process.waitFor() == 0) { "Stale generated weapon contract" }
+        ZipFile(dependencies.resolve("gun-core.zip")).use { upstream ->
+            repositoryRoot.resolve("datapack/data/feato_gun_valhalla/function").walkTopDown()
+                .filter { it.extension == "mcfunction" }.forEach { file ->
+                    Regex("function (gbg:[a-z0-9_/]+)").findAll(file.readText()).forEach { match ->
+                        check(upstream.getEntry("data/gbg/function/${match.groupValues[1].substringAfter(':')}.mcfunction") != null) { "Missing fixed Gun Core function: $match" }
+                    }
+                }
+        }
+    }
+}
+verifyDatapack { dependsOn(verifyGunCoreContract) }
 val datapackZip by tasks.registering(Zip::class) {
     dependsOn(verifyDatapack)
     from(repositoryRoot.resolve("datapack"))
