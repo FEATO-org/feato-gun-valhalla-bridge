@@ -1,7 +1,13 @@
 {
   "pack": {
-    "description": "FEATO Gun-Valhalla Bridge 0.1.0-poc.1 (protocol 2; raycast adapter PoC)",
-    "min_format": [107, 1],
-    "max_format": [107, 1]
+    "description": "FEATO Gun-Valhalla Bridge 0.3.0-poc.2 (protocol 2; raycast adapter PoC)",
+    "min_format": [
+      107,
+      1
+    ],
+    "max_format": [
+      107,
+      1
+    ]
   }
 }
