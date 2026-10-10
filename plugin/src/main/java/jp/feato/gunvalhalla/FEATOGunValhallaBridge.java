@@ -10,6 +10,8 @@ import jp.feato.gunvalhalla.config.RuntimeConfiguration;
 import jp.feato.gunvalhalla.compatibility.BridgeCompatibility;
 import jp.feato.gunvalhalla.compatibility.DatapackHandshake;
 import jp.feato.gunvalhalla.integration.valhalla.ValhallaIntegration;
+import jp.feato.gunvalhalla.integration.guncore.GunCoreShotAdapter;
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
@@ -23,6 +25,7 @@ public final class FEATOGunValhallaBridge extends JavaPlugin implements Listener
     private BridgeCompatibility compatibility;
     private DatapackHandshake handshake;
     private ValhallaIntegration valhalla;
+    private GunCoreShotAdapter shots;
     private boolean registered;
     private boolean failed;
     private String status = "Waiting for initialization";
@@ -37,6 +40,9 @@ public final class FEATOGunValhallaBridge extends JavaPlugin implements Listener
             command.setExecutor(commands);
             command.setTabCompleter(commands);
             runtimeConfiguration.reload();
+            shots = new GunCoreShotAdapter(this, () -> runtimeConfiguration.settings().debugEnabled() && runtimeConfiguration.settings().shotContextDebug());
+            getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
+                    event -> event.registrar().register("fgvnotify", "Bridge record transport; not a player command", shots));
             compatibility = BridgeCompatibility.load(input);
             if (!getPluginMeta().getVersion().equals(compatibility.version())) throw new IllegalStateException("Plugin metadata version mismatch");
             ServerBuildInfo info = ServerBuildInfo.buildInfo();
@@ -88,6 +94,7 @@ public final class FEATOGunValhallaBridge extends JavaPlugin implements Listener
         status = failure.getMessage() == null ? failure.getClass().getName() : failure.getMessage();
         getLogger().log(java.util.logging.Level.SEVERE, "Bridge PoC stopped: " + status + ". No automatic retry; full restart required.", failure);
         getServer().getScheduler().cancelTasks(this);
+        if (shots != null) shots.close();
         // Do not unregister through private APIs or erase player data. A partial registration
         // remains visible in Valhalla until full restart, with this skill non-levelable.
     }
@@ -114,7 +121,8 @@ public final class FEATOGunValhallaBridge extends JavaPlugin implements Listener
     @EventHandler public void onLogin(PlayerLoginEvent event) {
         if (!registered && !failed) event.disallow(PlayerLoginEvent.Result.KICK_OTHER, "FIREARMS PoC initializing; retry shortly");
     }
-    @Override public void onDisable() { failed = true; }
+    @Override public void onDisable() { failed = true; if (shots != null) shots.close(); }
+    public GunCoreShotAdapter shots() { return shots; }
     public boolean isReady() { return isEnabled() && registered && !failed && handshake != null && handshake.state() == DatapackHandshake.State.VERIFIED; }
     public String status() { return status; }
     public boolean debugEnabled() { return runtimeConfiguration != null && runtimeConfiguration.debugEnabled(); }

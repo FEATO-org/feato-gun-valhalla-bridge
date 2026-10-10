@@ -1,0 +1,19 @@
+{
+  "function": "minecraft:copy_custom_data",
+  "source": {
+    "type": "minecraft:storage",
+    "source": "feato_gun_valhalla:adapt"
+  },
+  "ops": [
+    {
+      "source": "original",
+      "target": "gbg.projectile_type",
+      "op": "replace"
+    },
+    {
+      "source": "empty",
+      "target": "fgv",
+      "op": "replace"
+    }
+  ]
+}

@@ -1,19 +1,20 @@
 # FIREARMS Bridge PoC
 
-初期検証日: 2026-10-03、進捗更新: 2026-10-04 (Asia/Tokyo)。実装対象は固定版のみ。
+初期検証日: 2026-10-03、進捗更新: 2026-10-10 (Asia/Tokyo)。実装対象は固定版のみ。
 
 ## Gate / status
 
-- Phase 1: 部分成功。専用Java実装と静的テストに加え、ユーザー実機確認でhandshake・FIREARMS登録・銃器表示・Lv0 Profileの再ログイン維持を確認済み。
-- Phase 2: 未実施。respec/recalculationは後回しとし、その検証待ちで後続開発を止めない。
-- Phase 3: 未実施。Phase 2の実機合格待ち。
+- Phase 1: **Complete**。ユーザーの指示と実機確認に基づく。下記の証拠範囲は維持する。
+- Phase 2: **Raycast subset ready for live verification**。通常銃・burst・shotgunを先行実装。slowcast / explosionの帰属はBlocked、観測のみ。全体はCompleteではない。
+- Phase 3: **Not started**。Phase 2全体の実機合格待ち。
 - Tactical Reload / Weapon Bash / Deadeye Night Vision / Demolitionist / Bulwark: 未実装。設定キーのみ予約。
 
 2026-10-04、ユーザーから起動失敗を修正し正常動作したとの報告を受けた。
 以下の「ユーザー実機確認済み」はユーザー報告の範囲であり、今回Codexが本番を操作した結果ではない。
 Lv0時の特定XP値の保存一致、Level Up、完全再起動後の永続化、DB上の値、Perk三択排他、
 respec/recalculationは未確認。respecは実装進行を優先して後回しとし、専用の回避処理は追加しない。
-この変更ではPhase 2/3や効果本体を実装せず、成功範囲を推測で広げない。
+2026-10-10、案Aと案Eを実装。respec/recalculationはDeferred / non-blocking。
+Phase 2の限定補正案Bは計測結果待ち。ゲーム効果とPhase 3は未実装。
 
 ## Repository decisions
 
@@ -34,7 +35,7 @@ PluginとDatapackは本リポジトリで管理。初期PoC時のインフラ参
 | Minecraft 26.2 | Paper JAR内`version.json` | Java 25、data pack 107.1、protocol 776。最新への読み替えなし |
 | ValhallaMMO 1.10.3 | [固定配布JAR](https://cdn.modrinth.com/data/rxrgsoud/versions/GkeSDJSq/ValhallaMMO_1.10.3.jar)、plugin.yml、javap | 公開APIと`shouldPersist(Profile)`のbytecode確認 |
 | ValhallaMMOソース | [既存checkoutと同じcommit](https://github.com/Athlaeos/ValhallaMMO/tree/231f9758d51a14bff2214d7c67428960b15648d4)、pom revision 1.10.3 | Registry、保存、Perk、respec経路の根拠。Bridgeへコピーしない |
-| Gun Core V1.0.15 / Modern Guns V1.9.3 | ユーザー指定の固定対象を互換性定義へ記録 | 対象Datapack実体の検証はPhase 2。resource packをDatapackと扱わない |
+| Gun Core V1.0.15 / Modern Guns V1.9.3 | 固定Data ZIPのSHA-512と内部function・27銃定義をbuild時検証 | 実機の銃撃は未確認。resource packと区別 |
 
 ValhallaMMO配布JARのSHA-512:
 
@@ -72,13 +73,14 @@ Paper配布JARのSHA-256:
 Datapackは`fgv_bridge` objectiveの専用fake playerにrelease / protocol / 対象versionと
 heartbeatを記録。load/tick tagからBridge専用functionを実行する。
 Pluginは20tickごとに読み、一致するmarkerが動いたことを確認してから登録する。
+先行Adapterを含む開発buildはprotocol 2。protocol 1の公開0.3.0とは混在させない。
 起動中は短時間のログインを拒否する。100tick marker不在、60tick heartbeat停止、
 identity不一致、登録後のmarker消失を明示的なエラーとする。
 管理者操作直前にもidentityを検査するが、定期heartbeat計測のサンプル数は増やさない。
 
 これは互換性確認専用であり、shot通知方式ではない。
 このmarkerはGun Core/Modern Gunsの実導入versionを証明しない。
-Phase 2で同期通知または順序・一意性を保証したqueue等を実証するまではshot連携なし。
+Phase 2先行Adapterは別の同期record commandで通知する。marker/heartbeatのpollをshot通知に流用しない。
 
 登録が途中失敗した場合に公開unregister APIは使わない。自動再登録やprivate APIによるrollbackを
 行わず、Bridgeをfail-closedにし、完全再起動を要求する。登録済みProfileやデータは削除しない。
@@ -147,13 +149,54 @@ reload経路のローカルテストは実機のPlayer/Valhalla動作を証明�
 判明したら再現条件・ログ・DB状態を残す。respec/recalculationが未確認であることだけを
 後続開発の停止理由にしない。respec専用処理や回避実装を推測で追加しない。
 
-## Phase 2 (not implemented)
+## Phase 2 (raycast subset + observation)
 
-logical shot / burst / shotgun multi-target / slowcast marker / explosion帰属 / miss /
-multiplayer / shooter一致 / stable weapon IDすべて未検証。
-`gbg.id`をshot IDと扱わず、`EntityShootBowEvent = 1 shot`と仮定しない。
-既知の技術調査は維持。必要な固定Datapack本体を準備した上で、27銃を検証する。
-shared storage最新1件poll、後tickのgbg:gun_data/macro、nearest entity対応付けは採用しない。
+操作手順・transport・lifecycle・cleanup・制約・案Bの判断は
+[Phase 2 raycast implementation](phase2-raycast.md)を参照。
+当初の停止根拠は[固定版contract audit](phase2-contract-audit.md)に保存する。
+
+| Path | 実装状態 |
+| --- | --- |
+| raycast | 管理者が指定する21銃のitemを適応し、actual-shot callbackから既存native engineへ委譲 |
+| burst | 同じcallbackでnative追加発射ごとにlong IDを生成。実射撃による確認待ち |
+| pellet | type 3の既存複数target処理へ委譲。1 callback / 1 shotに複数hit |
+| slowcast | native markerのUUID / source score / range / 除去を観測。logical shotは未生成 |
+| explosion | native entity UUIDの生成・爆発を観測。shot帰属はUNKNOWN |
+
+### Fixed 27-weapon matrix
+
+固定Modern Guns V1.9.3のloot tableから分類。raycastのcreation / completionは実装済み、
+slowcastは観測のみ。全銃の実射撃は **Not yet live-tested**。
+
+| stable weapon ID | type / speed | path | creation / completion | 実射撃 |
+| --- | --- | --- | --- | --- |
+| `modern_guns:gun/aa12` | 3 / 1 | raycast / pellet | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/ak47` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/barrett_m82` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/beretta_486` | 3 / 1 | raycast / pellet | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/beretta_686` | 3 / 1 | raycast / pellet | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/colt_python` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/desert_eagle` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/fn_scar` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/gl06` | 101 / 8 | slowcast | 未実装・観測のみ | Not yet live-tested |
+| `modern_guns:gun/glock_17` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/heckler_and_koch_mp5` | 1 / 1 | raycast / burst | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/luger_p08` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/m1911` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/m202_flash` | 100 / 22 | slowcast | 未実装・観測のみ | Not yet live-tested |
+| `modern_guns:gun/m4a1` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/m72_law` | 100 / 12 | slowcast | 未実装・観測のみ | Not yet live-tested |
+| `modern_guns:gun/m79` | 101 / 6 | slowcast | 未実装・観測のみ | Not yet live-tested |
+| `modern_guns:gun/milkor_mgl` | 101 / 10 | slowcast | 未実装・観測のみ | Not yet live-tested |
+| `modern_guns:gun/p90` | 1 / 1 | raycast / burst | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/remington_870` | 3 / 1 | raycast / pellet | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/rpg_7` | 100 / 18 | slowcast | 未実装・観測のみ | Not yet live-tested |
+| `modern_guns:gun/sig_p320` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/smith_and_wesson_model_29` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/spas_12` | 3 / 1 | raycast / pellet | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/springfield_m1a` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/thompson_submachine_gun` | 1 / 1 | raycast / burst | 実装済み・実機確認待ち | Not yet live-tested |
+| `modern_guns:gun/winchester_model_70` | 1 / 1 | raycast | 実装済み・実機確認待ち | Not yet live-tested |
 
 ## Phase 3 (not implemented)
 
@@ -191,13 +234,24 @@ Paper APIのPlayerLoginEvent利用にdeprecation noteが出るが、26.2 build 1
 Gradle 9.2.1にもdeprecation警告があり、Gradle 10への更新は対象外。
 これらの成功は実機検証の代わりにならない。
 
+### Phase 2先行Adapter build（2026-10-10）
+
+`./gradlew clean build --no-daemon`: BUILD SUCCESSFUL。
+JUnit **84件、failures=0、errors=0、skipped=0**（既存66件 + 新規18件）。
+追加テストはID一意性、immutable snapshot、shotgun multi-hit、duplicate/unknown/完了後hit拒否、
+source変化、UNKNOWN終了、block hit、active/completed TTL、履歴上限、debug無効化、disable cleanup、
+transport guard、UUID符号付き変換、active/hit容量、生成weapon resourceを検証する。
+slowcast/explosion mappingや実Minecraft射撃の成功をmockで補うテストは作らない。
+固定ZIPのSHA-512、生成allowlist、native function存在、Bridge JSON/function/tag/markerも検証。
+隔離Paperでのcommand輸送と人工fixtureの計測確認は[実装記録](phase2-raycast.md)参照。
+
 ## Known limitations / next gate
 
 - 検証用サーバー・実クライアントが必要。現時点で全Phaseの成立証明は完了していない。
 - ユーザー実機確認でhandshake・FIREARMS登録まで到達済み。SQL schemaの直接検査、異常系と保存値の整合は未確認。
 - SQLite/MySQL/Redis各保存方式のDB値照合を伴う実機試験は未実施。MySQLの場合はcolumn metadataも確認する。
 - Minecraft `/reload`、PlugMan、オンライン途中の追加はサポート対象外。Bridgeのconfigだけを読む`/firearms reload`は対応。公開Registry変更を検知したら停止。
-- Gun Core/Modern Gunsの対象Datapack本体と実行経路の確認はPhase 2へ保留。
+- 固定Gun Core/Modern Guns本体と内部経路は調査済み。slowcast帰属とmultiplayer実射撃は未確認。
 - respec/recalculationは未確認のまま後回し。後続開発を止める条件にはせず、専用処理は追加しない。
 - LICENSEは方針確定待ち。インフラ設定追加とユーザーの実機確認は上記参照。今回Codexによる本番適用は行わない。
 

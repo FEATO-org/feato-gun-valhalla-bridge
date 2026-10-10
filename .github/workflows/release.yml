@@ -116,8 +116,10 @@ jobs:
           Targets: Minecraft 26.2 / Paper build 126 / ValhallaMMO 1.10.3 /
           Gun Core V1.0.15 / Modern Guns V1.9.3.
 
-          Status: Phase 1 PoC. Live persistence, reconnect, restart and respec
-          verification are pending. Phase 2/3 and gun gameplay effects are not implemented.
+          Status: Phase 1 complete by user verification. Phase 2 raycast, burst and
+          shotgun adapter is ready for live verification; slowcast and explosion
+          attribution are not implemented (observation only). Phase 3 and gun gameplay
+          effects are not implemented. Respec/recalculation remains deferred.
           See docs/poc.md in the tagged source for verification procedures.
           EOF
           flags=()

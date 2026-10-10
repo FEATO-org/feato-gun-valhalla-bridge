@@ -21,13 +21,19 @@ public final class FirearmsDebugCommand implements TabExecutor {
         if (!plugin.isReady()) { sender.sendMessage("FIREARMS is unavailable: " + plugin.status()); return true; }
         boolean profile = args.length == 3 && args[0].equalsIgnoreCase("debug") && args[1].equalsIgnoreCase("profile");
         boolean exp = args.length == 4 && args[0].equalsIgnoreCase("debug") && args[1].equalsIgnoreCase("exp");
-        if (!profile && !exp) return false;
+        boolean shot = args.length == 3 && List.of("shots", "adapt", "restore").contains(args[1].toLowerCase(java.util.Locale.ROOT));
+        if (!profile && !exp && !shot) return false;
         Player player = plugin.getServer().getPlayerExact(args[2]);
         if (player == null) { sender.sendMessage("Target must be an online player with an exact name"); return true; }
         try {
             // Re-check current marker before a mutation, as well as the periodic watchdog.
             plugin.validateCurrentCompatibility();
             if (!plugin.isReady()) throw new IllegalStateException(plugin.status());
+            if (shot) {
+                if (args[1].equalsIgnoreCase("shots")) plugin.shots().report(sender, player);
+                else plugin.shots().adapt(sender, player, args[1].equalsIgnoreCase("restore"));
+                return true;
+            }
             String before = valhalla.profile(player);
             if (exp) {
                 double amount = DebugInput.experience(args[3]);
@@ -45,7 +51,7 @@ public final class FirearmsDebugCommand implements TabExecutor {
     @Override public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (!sender.hasPermission(PERMISSION) || !plugin.debugEnabled()) return List.of();
         if (args.length == 1) return List.of("debug");
-        if (args.length == 2 && args[0].equalsIgnoreCase("debug")) return List.of("profile", "exp");
+        if (args.length == 2 && args[0].equalsIgnoreCase("debug")) return List.of("profile", "exp", "shots", "adapt", "restore");
         return List.of();
     }
 }

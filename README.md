@@ -19,14 +19,15 @@ FEATO Minecraft Server向けBridge。
 
 ## Status
 
-Proof of Concept。Phase 1の検証用。Phase 2/3、銃器効果、本番XPは未実装。
+Phase 1: Complete（ユーザー実機確認と指示）。Phase 2はraycast / burst / shotgunの先行PoCを実装し、実機確認待ち。
+slowcast / explosionは観測のみで、shot帰属は未実装。Phase 3、銃器効果、本番XPは未実装。
 ユーザー実機確認でhandshake・FIREARMS登録・銃器表示・Lv0 Profileの再ログイン維持まで確認済み。
 respec/recalculationは未確認のまま後回しとし、その検証待ちで後続開発を止めない。
 確認範囲と残りの検証項目は[PoC記録](docs/poc.md)を参照。
 
 ## Build
 
-Java 25でリポジトリ直下から実行:
+Java 25とPython 3でリポジトリ直下から実行:
 
 ```sh
 ./gradlew build
@@ -96,12 +97,30 @@ markerの一致は実際に導入されたGun Core/Modern Gunsのversion検査�
 使うには`debug.enabled: true`と`feato.gunvalhalla.debug`権限が必要。
 詳細な検証手順・進行条件は[PoC記録](docs/poc.md)を参照。
 
+## Phase 2 raycast verification
+
+この開発buildのPluginとDatapackを両方配置し、完全再起動してください。
+protocol 2なので、公開0.3.0（protocol 1）の片方だけとは混在できません。
+`debug.enabled: true`と`debug.shot-context: true`を設定後、管理者/consoleで実行:
+
+```text
+/firearms reload
+/firearms debug adapt <player>
+/firearms debug shots <player>
+```
+
+`adapt`はplayerが現在メインハンドに持つ対応raycast銃だけを適応します。
+発射・命中・終了の同じIDを確認し、終了前に`/firearms debug restore <player>`でinventory内の適応銃を復元します。
+slowcast銃は適応せず、`SHOT OBSERVATION ... attribution=UNKNOWN`で計測します。
+offline/container内の銃、session境界、復旧と全27銃の試験は[詳細手順](docs/phase2-raycast.md)を参照。
+
 ## Administration commands
 
 | コマンド | 権限（既定OP） | 条件 |
 | --- | --- | --- |
 | `/firearms reload` | `feato.gunvalhalla.reload` | debug無効時も利用可能。consoleからも実行可能 |
 | `/firearms debug profile <player>` | `feato.gunvalhalla.debug` | `debug.enabled: true`、Bridgeの互換性確認・登録完了、対象がオンライン |
+| `/firearms debug adapt/restore/shots <player>` | `feato.gunvalhalla.debug` | debug有効・ready・対象オンライン。adaptはshot-contextも有効 |
 | `/firearms debug exp <player> <amount>` | `feato.gunvalhalla.debug` | 上と同じ。有限・正数・100万以下の検証用EXP |
 
 `reload`は`plugins/FEATOGunValhallaBridge/config.yml`のBridge runtime設定だけを再読み込みします。FIREARMS Skill/Profile、ValhallaMMO Registry、Perk tree、Datapack handshake、protocol/version markerは変更しません。`firearms.yml`、`firearms_progression.yml`など構造の変更や、停止したPoCの復旧には引き続き完全再起動が必要です。
