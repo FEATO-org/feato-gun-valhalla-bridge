@@ -77,6 +77,7 @@ val datapackZip by tasks.registering(Zip::class) {
     from(repositoryRoot.resolve("datapack"))
     destinationDirectory.set(layout.buildDirectory.dir("distributions"))
     archiveFileName.set("feato-gun-valhalla-bridge-datapack-${project.version}.zip")
+    doLast { logger.lifecycle("Datapack ZIP: ${archiveFile.get().asFile.absolutePath}") }
 }
 tasks.check { dependsOn(verifyDatapack) }
 tasks.build { dependsOn(datapackZip) }

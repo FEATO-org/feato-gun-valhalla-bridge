@@ -36,6 +36,20 @@ Paper APIは固定版。ValhallaMMOは固定配布JARを取得してSHA-512を�
 compile-only依存とする。第三者JARをBridgeへ同梱しない。
 JSON、必須function/tag、互換性markerを静的検証する。
 
+Datapackの導入用ZIPだけを生成する場合（Java 25が必要）:
+
+```sh
+./scripts/build-datapack.sh
+```
+
+このスクリプトは実行場所にかかわらず、既存のGradle `datapackZip`を呼びます。
+検証後に`plugin/build/distributions/feato-gun-valhalla-bridge-datapack-<version>.zip`を生成し、
+最後に絶対パスを表示します。ZIP直下には`pack.mcmeta`と`data/`が入り、
+解凍・手動リネームせず、そのまま対象ワールドの`datapacks/`へ配置できます。
+ファイル名のversionは`bridge.properties`から取得します。中身と異なる版へリネームしないでください。
+Plugin JARも同じversion / release IDのものを配置してください。
+通常の`./gradlew build`とRelease workflowでも、この同じZIP生成処理が実行されます。
+
 成果物（Plugin/Datapackは同一version）:
 
 - `plugin/build/libs/feato-gun-valhalla-bridge-plugin-0.1.0-poc.1.jar`
